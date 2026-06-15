@@ -1,0 +1,12 @@
+[build]
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/bilibili/*"
+  to = "/.netlify/functions/bilibili?splat=:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/img"
+  to = "/.netlify/functions/img"
+  status = 200
