@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>EnglishTok — 英语短视频</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0f;--surface:#1a1a26;--accent:#a855f7;font-family:system-ui,-apple-system,sans-serif}
+html,body{height:100%;width:100%;overflow:hidden;background:#000;color:#fff}
+#app{display:flex;flex-direction:column;height:100%;width:100%;max-width:500px;margin:0 auto;position:relative;background:#000}
+#topbar{position:absolute;top:0;left:0;right:0;z-index:20;padding:14px 12px 0;display:flex;align-items:center;gap:8px}
+#topbar .logo{font-size:18px;font-weight:800;background:linear-gradient(135deg,#a855f7,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;flex-shrink:0}
+#topbar input{flex:1;min-width:0;padding:7px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.5);color:#fff;font-size:13px;outline:none}
+#topbar input:focus{border-color:#a855f7}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.5);color:#fff;font-size:15px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;line-height:1}
+#cats{position:absolute;top:60px;left:0;right:0;z-index:20;display:flex;gap:6px;padding:0 12px;overflow-x:auto;scrollbar-width:none}
+#cats::-webkit-scrollbar{display:none}
+.cat{flex-shrink:0;padding:5px 13px;border-radius:16px;font-size:12px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.45);color:#ccc;cursor:pointer;white-space:nowrap;user-select:none;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.cat.on{background:#a855f7;border-color:#a855f7;color:#fff}
+#feed{flex:1;width:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scroll-snap-stop:always;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#feed::-webkit-scrollbar{display:none}
+.card{width:100%;height:100%;scroll-snap-align:start;position:relative;background:#000;display:flex;align-items:center;justify-content:center}
+.card .thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#111}
+.card .play-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5}
+.card .play-center .btn{width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.9);color:#000;font-size:22px;display:flex;align-items:center;justify-content:center;transition:transform .2s}
+.card .play-center:hover .btn{transform:scale(1.1)}
+.card .info{position:absolute;bottom:0;left:0;right:0;z-index:6;padding:100px 14px 20px;background:linear-gradient(transparent,rgba(0,0,0,.85) 50%);pointer-events:none}
+.card .info .title{font-size:15px;font-weight:600;line-height:1.35;margin-bottom:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.card .info .meta{font-size:12px;color:#ccc;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tag{padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700}
+.tag.yt{background:#f00;color:#fff}
+.tag.bl{background:#fb7299;color:#fff}
+.card .actions{position:absolute;right:10px;bottom:130px;z-index:7;display:flex;flex-direction:column;align-items:center;gap:14px}
+.card .actions .act{display:flex;flex-direction:column;align-items:center;gap:2px}
+.card .actions button{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:20px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;line-height:1}
+.card .actions button.on{background:#f59e0b;border-color:#f59e0b}
+.card .actions .lbl{font-size:10px;color:#fff;text-shadow:0 1px 2px #000}
+.state-msg{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#888;font-size:14px}
+.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.1);border-top-color:#a855f7;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.panel{position:fixed;inset:0;z-index:100;background:#0a0a0f;display:none;flex-direction:column}
+.panel.open{display:flex}
+.panel .ph{padding:14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
+.panel .ph h2{flex:1;font-size:17px}
+.panel .close{width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:#1a1a26;color:#fff;cursor:pointer;font-size:14px;line-height:1}
+.fav-grid{flex:1;overflow-y:auto;padding:10px;display:grid;gap:8px;grid-template-columns:1fr}
+@media(min-width:600px){.fav-grid{grid-template-columns:1fr 1fr}}
+.fav-row{display:flex;gap:10px;padding:10px;border-radius:12px;background:#1a1a26;border:1px solid rgba(255,255,255,.06);cursor:pointer}
+.fav-row img{width:100px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#000}
+.fav-row .fi{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.fav-row .fi h4{font-size:13px;line-height:1.3}
+.fav-row .fi span{font-size:11px;color:#888}
+.fav-row .del{align-self:center;width:28px;height:28px;border-radius:50%;border:none;background:none;color:#666;cursor:pointer;font-size:14px;flex-shrink:0}
+.fav-row .del:hover{color:#ef4444}
+.fav-empty{text-align:center;padding:80px 20px;color:#888}
+.sets{flex:1;overflow-y:auto;padding:20px}
+.sets .sg{margin-bottom:16px}
+.sets .sg label{display:block;font-size:13px;color:#888;margin-bottom:4px}
+.sets .sg input,.sets .sg select{width:100%;padding:9px 12px;border-radius:8px;font-size:14px;border:1px solid rgba(255,255,255,.1);background:#1a1a26;color:#fff;outline:none}
+.sets .sg input:focus{border-color:#a855f7}
+.sets .sg .hint{font-size:11px;color:#666;margin-top:3px}
+.sets .sg .hint a{color:#a855f7}
+.save-btn{width:100%;padding:11px;border:none;border-radius:8px;background:linear-gradient(135deg,#a855f7,#6366f1);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+#toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:200;padding:10px 20px;border-radius:20px;font-size:13px;background:#1a1a26;border:1px solid rgba(255,255,255,.1);color:#fff;box-shadow:0 4px 20px rgba(0,0,0,.5);opacity:0;transition:all .3s;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(4px)}
+.heart{position:fixed;pointer-events:none;z-index:300;font-size:36px;animation:hup .9s ease-out forwards}
+@keyframes hup{0%{opacity:1;transform:scale(.5) translateY(0)}50%{opacity:1;transform:scale(1.3) translateY(-25px)}100%{opacity:0;transform:scale(.8) translateY(-100px)}}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="topbar">
+    <span class="logo">EnglishTok</span>
+    <input type="text" id="search" placeholder="搜索英语学习视频..." autocomplete="off">
+    <button class="icon-btn" id="favBtn" title="收藏">⭐</button>
+    <button class="icon-btn" id="setBtn" title="设置">⚙</button>
+  </div>
+  <div id="cats">
+    <span class="cat on" data-q="英语学习 英语口语">推荐</span>
+    <span class="cat" data-q="英语发音 音标">发音</span>
+    <span class="cat" data-q="英语单词 词汇">词汇</span>
+    <span class="cat" data-q="英语口语 日常对话">对话</span>
+    <span class="cat" data-q="英语语法教学">语法</span>
+    <span class="cat" data-q="英语听力训练">听力</span>
+    <span class="cat" data-q="英语Vlog 日常英语">Vlog</span>
+    <span class="cat" data-q="English learning lesson">英文搜索</span>
+  </div>
+  <div id="feed"></div>
+</div>
+
+<div class="panel" id="favPanel">
+  <div class="ph"><h2>我的收藏</h2><span style="font-size:12px;color:#888" id="favN">0 个</span><button class="close" id="favClose">✕</button></div>
+  <div class="fav-grid" id="favList"></div>
+</div>
+
+<div class="panel" id="setPanel">
+  <div class="ph"><h2>设置</h2><button class="close" id="setClose">✕</button></div>
+  <div class="sets">
+    <div class="sg"><label>YouTube API Key <span style="font-size:11px;color:#666">(可选)</span></label><input type="text" id="apiKeyInp" placeholder="没Key也能用B站"><div class="hint">获取: <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a></div></div>
+    <div class="sg"><label>每页数量</label><select id="maxRes"><option value="8">8</option><option value="12" selected>12</option><option value="16">16</option><option value="20">20</option></select></div>
+    <div class="sg"><label>数据源</label><select id="srcSel"><option value="bilibili" selected>仅B站</option><option value="all">YouTube + B站</option><option value="youtube">仅YouTube</option></select></div>
+    <button class="save-btn" id="saveSet">保存设置</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ===== STATE =====
+const S={
+  apiKey:'',maxResults:12,source:'bilibili',query:'',videos:[],favs:[],
+  loading:!1,nextBl:1,hasMoreBl:!0,nextYt:'',hasMoreYt:!0,activeIdx:-1
+};
+try{const s=JSON.parse(localStorage.englishtok_settings||'{}');if(s.apiKey)S.apiKey=s.apiKey;if(s.maxResults)S.maxResults=s.maxResults;if(s.source!==undefined)S.source=s.source;S.favs=JSON.parse(localStorage.englishtok_favs||'[]')}catch(e){}
+
+const $=id=>document.getElementById(id);
+const feed=$('feed'),toast=$('toast');
+
+let toastT;
+function toastMsg(m,d){clearTimeout(toastT);toast.textContent=m;toast.classList.add('show');toastT=setTimeout(()=>toast.classList.remove('show'),d||1800)}
+
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function fixNum(n){if(n>=10000)return(n/10000).toFixed(1)+'万';if(n>=1000)return(n/1000).toFixed(1)+'k';return String(n||0)}
+function fixPic(url){if(!url)return'';if(url.startsWith('//'))url='https:'+url;else if(url.startsWith('http://'))url=url.replace('http://','https://');return url}
+function isFav(id){return S.favs.some(f=>f.id===id)}
+function updateFavBadge(){$('favN').textContent=S.favs.length+' 个';$('favBtn').style.borderColor=S.favs.length?'#f59e0b':'';$('favBtn').style.color=S.favs.length?'#f59e0b':''}
+
+// ===== RENDER =====
+function cardHTML(v,i){
+  const fav=isFav(v.id),tcls=v.source==='youtube'?'yt':'bl',tname=v.source==='youtube'?'YT':'B站';
+  return `<div class="card" data-idx="${i}" data-id="${v.id}">
+    <img class="thumb" src="${fixPic(v.thumbnail)}" referrerpolicy="no-referrer" onerror="this.style.display='none'">
+    <div class="play-center" data-idx="${i}"><div class="btn">▶</div></div>
+    <div class="info"><div class="title">${esc(v.title)}</div><div class="meta"><span>${esc(v.channel)}</span><span class="tag ${tcls}">${tname}</span>${v.views?'<span>'+v.views+' views</span>':''}</div></div>
+    <div class="actions">
+      <div class="act"><button data-act="fav" data-idx="${i}" class="${fav?'on':''}">⭐</button><span class="lbl">收藏</span></div>
+      <div class="act"><button data-act="open" data-idx="${i}">🔗</button><span class="lbl">打开</span></div>
+      <div class="act"><button data-act="share" data-idx="${i}">↗</button><span class="lbl">分享</span></div>
+    </div>
+  </div>`;
+}
+
+const activePlayers=new Map();
+
+function bindCards(){
+  feed.querySelectorAll('.play-center').forEach(el=>el.addEventListener('click',()=>playVideo(parseInt(el.dataset.idx))));
+  feed.querySelectorAll('[data-act="fav"]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const i=parseInt(btn.dataset.idx);toggleFav(S.videos[i]);const r=btn.getBoundingClientRect();spawnHeart(r.left+r.width/2,r.top,isFav(S.videos[i].id));refreshCard(i)}));
+  feed.querySelectorAll('[data-act="open"]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();window.open(S.videos[parseInt(btn.dataset.idx)].url,'_blank')}));
+  feed.querySelectorAll('[data-act="share"]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const v=S.videos[parseInt(btn.dataset.idx)];if(navigator.share)navigator.share({title:v.title,url:v.url}).catch(()=>{});else navigator.clipboard.writeText(v.url).then(()=>toastMsg('链接已复制'))}));
+}
+
+let observer;
+function setupObserver(){
+  if(observer)observer.disconnect();
+  observer=new IntersectionObserver(entries=>{for(const e of entries){const c=e.target,i=parseInt(c.dataset.idx);if(isNaN(i))continue;if(e.isIntersecting&&e.intersectionRatio>=0.6){if(!activePlayers.has(i))playVideo(i)}else if(e.intersectionRatio<0.3){unloadPlayer(i)}}},{threshold:[0,0.3,0.6,1]});
+  feed.querySelectorAll('.card').forEach(c=>observer.observe(c));
+}
+
+function refreshCard(i){const c=feed.querySelector('.card[data-idx="'+i+'"]');if(c){const btn=c.querySelector('[data-act="fav"]');if(btn)btn.classList.toggle('on',isFav(S.videos[i].id))}}
+function spawnHeart(x,y,filled){const h=document.createElement('div');h.className='heart';h.textContent=filled?'❤️':'💔';h.style.left=(x-18)+'px';h.style.top=y+'px';document.body.appendChild(h);setTimeout(()=>h.remove(),900)}
+
+// ===== PLAYER =====
+function playVideo(i){
+  const v=S.videos[i];if(!v)return;
+  const card=feed.querySelector('.card[data-idx="'+i+'"]');if(!card||card.querySelector('iframe,video'))return;
+  const thumb=card.querySelector('.thumb'),overlay=card.querySelector('.play-center');
+  const iframe=document.createElement('iframe');
+  iframe.style.cssText='position:absolute;inset:0;width:100%;height:100%;border:none;z-index:3';
+  iframe.allow='autoplay; encrypted-media; picture-in-picture';iframe.allowFullscreen=true;
+  if(v.source==='youtube'){iframe.src='https://www.youtube.com/embed/'+v.id+'?autoplay=1&mute=1&controls=1&rel=0'}
+  else{iframe.src='https://player.bilibili.com/player.html?bvid='+v.id+'&page=1&autoplay=1&high_quality=1&as_wide=1&danmaku=0'}
+  iframe.addEventListener('load',()=>{if(thumb)thumb.style.display='none';if(overlay)overlay.style.display='none'});
+  setTimeout(()=>{if(thumb)thumb.style.display='none';if(overlay)overlay.style.display='none'},3000);
+  card.appendChild(iframe);activePlayers.set(i,!0);S.activeIdx=i;
+}
+
+function unloadPlayer(i){
+  const card=feed.querySelector('.card[data-idx="'+i+'"]');if(!card)return;
+  const p=card.querySelector('iframe,video');if(p)p.remove();
+  const thumb=card.querySelector('.thumb'),overlay=card.querySelector('.play-center');
+  if(thumb)thumb.style.display='';if(overlay)overlay.style.display='';activePlayers.delete(i);
+}
+
+// ===== FAVORITES =====
+function toggleFav(v){const i=S.favs.findIndex(f=>f.id===v.id);if(i>=0){S.favs.splice(i,1);toastMsg('已取消收藏')}else{S.favs.unshift(v);toastMsg('已收藏')}localStorage.englishtok_favs=JSON.stringify(S.favs);updateFavBadge()}
+
+function renderFavs(){
+  updateFavBadge();
+  if(!S.favs.length){$('favList').innerHTML='<div class="fav-empty"><p style="font-size:48px">📭</p><p>还没有收藏</p><p style="font-size:12px;color:#666">刷视频时点⭐即可收藏</p></div>';return}
+  $('favList').innerHTML=S.favs.map(v=>`<div class="fav-row" data-id="${v.id}"><img src="${fixPic(v.thumbnail)}" referrerpolicy="no-referrer"><div class="fi"><h4>${esc(v.title)}</h4><span>${esc(v.channel)} · ${v.source==='youtube'?'YT':'B站'}</span></div><button class="del" data-del="${v.id}">🗑</button></div>`).join('');
+  $('favList').querySelectorAll('.fav-row').forEach(r=>r.addEventListener('click',e=>{if(e.target.closest('.del'))return;const vid=S.favs.find(v=>v.id===r.dataset.id);if(vid){S.videos=[vid,...S.videos.filter(v=>v.id!==vid.id)];renderAll();feed.scrollTop=0;$('favPanel').classList.remove('open')}}));
+  $('favList').querySelectorAll('.del').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();S.favs=S.favs.filter(v=>v.id!==b.dataset.del);localStorage.englishtok_favs=JSON.stringify(S.favs);renderFavs();renderAll()}));
+}
+
+// ===== API =====
+async function fetchBilibili(q,page){
+  try{
+    const r=await fetch('https://api.bilibili.com/x/web-interface/search/all/v2?keyword='+encodeURIComponent(q)+'&page='+page+'&page_size='+Math.min(S.maxResults,20));
+    if(!r.ok)throw new Error('B站请求失败');
+    const d=await r.json();if(d.code!==0)throw new Error(d.message||'B站错误');
+    const vids=[];
+    for(const it of(d.data?.result||[])){if(it.result_type!=='video')continue;for(const v of(Array.isArray(it.data)?it.data:[])){const bvid=v.bvid||('av'+v.id);vids.push({id:bvid,source:'bilibili',title:(v.title||'').replace(/<em class="keyword">|<\/em>/g,''),channel:v.author||'',thumbnail:(v.pic||'').replace(/^\/\//,'https://').replace('http://','https://'),url:v.arcurl||'https://www.bilibili.com/video/'+bvid,views:fixNum(v.play),duration:v.duration||''})}}
+    const pages=Math.ceil((d.data?.numResults||0)/S.maxResults);
+    return{vids,nextPage:page+1,hasMore:page<pages&&page<10};
+  }catch(e){console.warn('B站:',e.message);return{vids:[],nextPage:1,hasMore:!1}}
+}
+
+async function fetchYouTube(q,pt){
+  if(!S.apiKey)return{vids:[],next:'',hasMore:!1};
+  const p=new URLSearchParams({part:'snippet',q,type:'video',videoDuration:'short',maxResults:S.maxResults,key:S.apiKey,relevanceLanguage:'en',safeSearch:'none'});
+  if(pt)p.set('pageToken',pt);
+  try{
+    const r=await fetch('https://www.googleapis.com/youtube/v3/search?'+p);
+    if(!r.ok)throw new Error('YouTube错误');
+    const d=await r.json();
+    const vids=(d.items||[]).map(i=>({id:i.id.videoId,source:'youtube',title:i.snippet.title,channel:i.snippet.channelTitle,thumbnail:i.snippet.thumbnails?.maxres?.url||i.snippet.thumbnails?.high?.url||i.snippet.thumbnails?.medium?.url,url:'https://www.youtube.com/watch?v='+i.id.videoId}));
+    return{vids,next:d.nextPageToken||'',hasMore:!!d.nextPageToken};
+  }catch(e){console.warn('YT:',e.message);return{vids:[],next:'',hasMore:!1}}
+}
+
+// ===== RENDER ALL =====
+function renderAll(){
+  if(!S.videos.length){feed.innerHTML='<div class="state-msg"><span style="font-size:48px">📺</span><p>暂无视频</p><p style="font-size:12px;color:#666">换个分类试试</p></div>';return}
+  feed.innerHTML=S.videos.map((v,i)=>cardHTML(v,i)).join('');bindCards();setupObserver();
+}
+
+// ===== LOAD =====
+async function loadVideos(q,append){
+  if(S.loading)return;S.loading=!0;S.query=q;
+  if(!append){feed.innerHTML='<div class="state-msg"><div class="spinner"></div><span>搜索中...</span></div>';S.videos=[];S.nextBl=1;S.hasMoreBl=!0;S.nextYt='';S.hasMoreYt=!0}
+  const srcs=S.source==='all'?['youtube','bilibili']:[S.source],jobs=[];
+  if(srcs.includes('youtube')){const pt=append?S.nextYt:'';if(!append||S.hasMoreYt)jobs.push(fetchYouTube(q,pt).then(r=>{if(!append)S.nextYt=r.next;else S.nextYt=r.next;S.hasMoreYt=r.hasMore;return r.vids}))}
+  if(srcs.includes('bilibili')){const pg=append?S.nextBl:1;if(!append||S.hasMoreBl)jobs.push(fetchBilibili(q,pg).then(r=>{if(!append)S.nextBl=r.nextPage;else S.nextBl=r.nextPage;S.hasMoreBl=r.hasMore;return r.vids}))}
+  const results=await Promise.all(jobs),all=results.flat();
+  if(!append&&results.length>1){for(let i=all.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[all[i],all[j]]=[all[j],all[i]]}}
+  if(append)S.videos.push(...all);else S.videos=all;
+  renderAll();S.loading=!1;
+}
+
+// ===== INFINITE SCROLL =====
+feed.addEventListener('scroll',()=>{const{scrollTop,scrollHeight,clientHeight}=feed;if(scrollHeight-scrollTop-clientHeight<600&&!S.loading){if(S.hasMoreBl||S.hasMoreYt)loadVideos(S.query,!0)}});
+
+// ===== KEYBOARD =====
+document.addEventListener('keydown',e=>{if(document.activeElement?.tagName==='INPUT')return;if(e.key==='ArrowDown'||e.key==='j'){e.preventDefault();feed.scrollBy({top:feed.clientHeight,behavior:'smooth'})}else if(e.key==='ArrowUp'||e.key==='k'){e.preventDefault();feed.scrollBy({top:-feed.clientHeight,behavior:'smooth'})}});
+
+// ===== SEARCH =====
+let st;$('search').addEventListener('input',()=>{clearTimeout(st);st=setTimeout(()=>{const q=$('search').value.trim();if(q){document.querySelectorAll('#cats .cat').forEach(c=>c.classList.remove('on'));loadVideos(q)}},500)});
+$('search').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(st);const q=$('search').value.trim();if(q){document.querySelectorAll('#cats .cat').forEach(c=>c.classList.remove('on'));loadVideos(q)}}});
+
+// ===== CATEGORIES =====
+$('cats').addEventListener('click',e=>{const c=e.target.closest('.cat');if(!c)return;document.querySelectorAll('#cats .cat').forEach(x=>x.classList.remove('on'));c.classList.add('on');$('search').value='';loadVideos(c.dataset.q)});
+
+// ===== DOUBLE TAP =====
+let lastTap=0;feed.addEventListener('click',e=>{if(e.target.closest('button')||e.target.closest('.play-center')||e.target.closest('iframe'))return;const now=Date.now();if(now-lastTap<300){const card=e.target.closest('.card');if(card){const i=parseInt(card.dataset.idx);if(!isNaN(i)&&S.videos[i]){toggleFav(S.videos[i]);const r=card.getBoundingClientRect();spawnHeart(r.left+r.width/2,r.top+r.height/2,isFav(S.videos[i].id));refreshCard(i)}}}lastTap=now});
+
+// ===== PANELS =====
+$('favBtn').addEventListener('click',()=>{$('favPanel').classList.toggle('open');if($('favPanel').classList.contains('open'))renderFavs()});
+$('favClose').addEventListener('click',()=>$('favPanel').classList.remove('open'));
+$('setBtn').addEventListener('click',()=>{$('setPanel').classList.add('open');$('apiKeyInp').value=S.apiKey;$('maxRes').value=S.maxResults;$('srcSel').value=S.source});
+$('setClose').addEventListener('click',()=>$('setPanel').classList.remove('open'));
+$('saveSet').addEventListener('click',()=>{S.apiKey=$('apiKeyInp').value.trim();S.maxResults=parseInt($('maxRes').value)||12;S.source=$('srcSel').value;localStorage.englishtok_settings=JSON.stringify({apiKey:S.apiKey,maxResults:S.maxResults,source:S.source});$('setPanel').classList.remove('open');toastMsg('设置已保存');loadVideos(S.query)});
+
+// ===== INIT =====
+updateFavBadge();
+const activeCat=document.querySelector('#cats .cat.on');
+loadVideos(activeCat?activeCat.dataset.q:'英语学习 英语口语');
+</script>
+</body>
+</html>

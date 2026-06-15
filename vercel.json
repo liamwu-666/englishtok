@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "api/bilibili/[...path].js": {
+      "memory": 256,
+      "maxDuration": 10
+    },
+    "api/img.js": {
+      "memory": 256,
+      "maxDuration": 10
+    }
+  }
+}
