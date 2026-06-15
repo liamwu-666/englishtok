@@ -2,6 +2,7 @@
   "name": "englishtok",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "EnglishTok — 英语短视频学习",
   "scripts": {
     "dev": "python server.py"
